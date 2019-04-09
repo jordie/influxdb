@@ -1,12 +1,13 @@
 // Libraries
 import React, {PureComponent, ChangeEvent} from 'react'
-import {connect} from 'react-redux'
 import _ from 'lodash'
+import {connect} from 'react-redux'
+import {withRouter, WithRouterProps} from 'react-router'
 
 // Components
 import {Form, Button} from '@influxdata/clockface'
 import {Overlay} from 'src/clockface'
-import CreateScraperForm from 'src/organizations/components/CreateScraperForm'
+import CreateScraperForm from 'src/scrapers/components/CreateScraperForm'
 
 // Actions
 import {notify as notifyAction, notify} from 'src/shared/actions/notifications'
@@ -19,12 +20,15 @@ import {
   scraperCreateSuccess,
   scraperCreateFailed,
 } from 'src/shared/copy/v2/notifications'
+import {AppState} from 'src/types'
 
 interface OwnProps {
-  visible: boolean
-  buckets: Bucket[]
-  onDismiss: () => void
   overrideBucketIDSelection?: string
+  visible: boolean
+}
+
+interface StateProps {
+  buckets: Bucket[]
 }
 
 interface DispatchProps {
@@ -32,7 +36,7 @@ interface DispatchProps {
   onCreateScraper: typeof createScraper
 }
 
-type Props = OwnProps & DispatchProps
+type Props = OwnProps & StateProps & DispatchProps & WithRouterProps
 
 interface State {
   scraper: ScraperTargetRequest
@@ -79,12 +83,12 @@ class CreateScraperOverlay extends PureComponent<Props, State> {
 
   public render() {
     const {scraper} = this.state
-    const {onDismiss, visible, buckets} = this.props
+    const {buckets} = this.props
 
     return (
-      <Overlay visible={visible}>
+      <Overlay visible={true}>
         <Overlay.Container maxWidth={600}>
-          <Overlay.Heading title="Create Scraper" onDismiss={onDismiss} />
+          <Overlay.Heading title="Create Scraper" onDismiss={this.onDismiss} />
           <Form onSubmit={this.handleSubmit}>
             <Overlay.Body>
               <h5 className="wizard-step--sub-title">
@@ -103,7 +107,7 @@ class CreateScraperOverlay extends PureComponent<Props, State> {
             <Overlay.Footer>
               <Button
                 text="Cancel"
-                onClick={onDismiss}
+                onClick={this.onDismiss}
                 testID="create-scraper--cancel"
               />
               <Button
@@ -147,13 +151,14 @@ class CreateScraperOverlay extends PureComponent<Props, State> {
     return ComponentStatus.Default
   }
 
+  // TODO: MOVE TO ACTION THUNK
   private handleSubmit = async () => {
     try {
-      const {onCreateScraper, onDismiss, notify} = this.props
+      const {onCreateScraper, notify} = this.props
       const {scraper} = this.state
 
       await onCreateScraper(scraper)
-      onDismiss()
+      this.onDismiss()
       notify(scraperCreateSuccess())
     } catch (e) {
       console.error(e)
@@ -164,14 +169,26 @@ class CreateScraperOverlay extends PureComponent<Props, State> {
   private get origin(): string {
     return window.location.origin
   }
+
+  private onDismiss = (): void => {
+    const {
+      router,
+      params: {orgID},
+    } = this.props
+    router.push(`/orgs/${orgID}/scrapers`)
+  }
 }
+
+const mstp = ({buckets}: AppState): StateProps => ({
+  buckets: buckets.list,
+})
 
 const mdtp: DispatchProps = {
   notify: notifyAction,
   onCreateScraper: createScraper,
 }
 
-export default connect<{}, DispatchProps, OwnProps>(
-  null,
+export default connect<StateProps, DispatchProps, OwnProps>(
+  mstp,
   mdtp
-)(CreateScraperOverlay)
+)(withRouter<StateProps & DispatchProps & OwnProps>(CreateScraperOverlay))

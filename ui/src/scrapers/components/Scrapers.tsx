@@ -1,6 +1,8 @@
 // Libraries
-import _ from 'lodash'
 import React, {PureComponent, ChangeEvent} from 'react'
+import {withRouter, WithRouterProps} from 'react-router'
+import {connect} from 'react-redux'
+import _ from 'lodash'
 
 // APIs
 import {client} from 'src/utils/api'
@@ -8,8 +10,7 @@ import {client} from 'src/utils/api'
 // Components
 import {Input, Button, EmptyState} from '@influxdata/clockface'
 import {Tabs} from 'src/clockface'
-import ScraperList from 'src/organizations/components/ScraperList'
-import CreateScraperOverlay from 'src/organizations/components/CreateScraperOverlay'
+import ScraperList from 'src/scrapers/components/ScraperList'
 import NoBucketsWarning from 'src/organizations/components/NoBucketsWarning'
 
 // Actions
@@ -27,7 +28,7 @@ import {
   ComponentColor,
   ComponentStatus,
 } from '@influxdata/clockface'
-import {OverlayState} from 'src/types'
+import {AppState} from 'src/types'
 import {
   scraperDeleteSuccess,
   scraperDeleteFailed,
@@ -36,16 +37,19 @@ import {
 } from 'src/shared/copy/v2/notifications'
 import FilterList from 'src/shared/components/Filter'
 
-interface Props {
+interface StateProps {
   scrapers: ScraperTargetResponse[]
-  onChange: () => void
-  orgName: string
   buckets: Bucket[]
+}
+
+interface OwnProps {
+  orgName: string
   notify: NotificationsActions.PublishNotificationActionCreator
 }
 
+type Props = OwnProps & StateProps & WithRouterProps
+
 interface State {
-  overlayState: OverlayState
   searchTerm: string
 }
 
@@ -55,7 +59,6 @@ class Scrapers extends PureComponent<Props, State> {
     super(props)
 
     this.state = {
-      overlayState: OverlayState.Closed,
       searchTerm: '',
     }
   }
@@ -93,7 +96,6 @@ class Scrapers extends PureComponent<Props, State> {
             />
           )}
         </FilterList>
-        {this.createScraperOverlay}
       </>
     )
   }
@@ -108,34 +110,21 @@ class Scrapers extends PureComponent<Props, State> {
     return false
   }
 
-  private get createScraperOverlay(): JSX.Element {
-    const {buckets} = this.props
+  // private get createScraperOverlay(): JSX.Element {
+  //   const {buckets} = this.props
 
-    if (this.hasNoBuckets) {
-      return
-    }
+  //   if (this.hasNoBuckets) {
+  //     return
+  //   }
 
-    return (
-      <CreateScraperOverlay
-        visible={this.isOverlayVisible}
-        buckets={buckets}
-        onDismiss={this.handleDismissOverlay}
-      />
-    )
-  }
-
-  private get isOverlayVisible(): boolean {
-    return this.state.overlayState === OverlayState.Open
-  }
-
-  private handleShowOverlay = () => {
-    this.setState({overlayState: OverlayState.Open})
-  }
-
-  private handleDismissOverlay = () => {
-    this.setState({overlayState: OverlayState.Closed})
-    this.props.onChange()
-  }
+  //   return (
+  //     <CreateScraperOverlay
+  //       visible={this.isOverlayVisible}
+  //       buckets={buckets}
+  //       onDismiss={this.handleDismissOverlay}
+  //     />
+  //   )
+  // }
 
   private createScraperButton = (testID: string): JSX.Element => {
     let status = ComponentStatus.Default
@@ -182,11 +171,11 @@ class Scrapers extends PureComponent<Props, State> {
     )
   }
 
+  // TODO: USE AN ACTION FOR CLIENT CALL AND NOTIFY
   private handleUpdateScraper = async (scraper: ScraperTargetResponse) => {
-    const {onChange, notify} = this.props
+    const {notify} = this.props
     try {
       await client.scrapers.update(scraper.id, scraper)
-      onChange()
       notify(scraperUpdateSuccess(scraper.name))
     } catch (e) {
       console.error(e)
@@ -195,15 +184,27 @@ class Scrapers extends PureComponent<Props, State> {
   }
 
   private handleDeleteScraper = async (scraper: ScraperTargetResponse) => {
-    const {onChange, notify} = this.props
+    const {notify} = this.props
     try {
       await client.scrapers.delete(scraper.id)
-      onChange()
       notify(scraperDeleteSuccess(scraper.name))
     } catch (e) {
       notify(scraperDeleteFailed(scraper.name))
       console.error(e)
     }
+  }
+
+  private handleShowOverlay = (): void => {
+    const {
+      router,
+      params: {orgID},
+    } = this.props
+
+    if (this.hasNoBuckets) {
+      return
+    }
+
+    router.push(`/orgs/${orgID}/scrapers/new`)
   }
 
   private handleFilterChange = (e: ChangeEvent<HTMLInputElement>): void => {
@@ -215,4 +216,12 @@ class Scrapers extends PureComponent<Props, State> {
   }
 }
 
-export default Scrapers
+const mstp = ({scrapers, buckets}: AppState): StateProps => ({
+  scrapers: scrapers.list,
+  buckets: buckets.list,
+})
+
+export default connect<StateProps, {}, OwnProps>(
+  mstp,
+  null
+)(withRouter<OwnProps>(Scrapers))

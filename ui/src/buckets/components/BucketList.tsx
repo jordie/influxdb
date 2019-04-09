@@ -8,7 +8,6 @@ import _ from 'lodash'
 import UpdateBucketOverlay from 'src/buckets/components/UpdateBucketOverlay'
 import BucketRow, {PrettyBucket} from 'src/buckets/components/BucketRow'
 import {Overlay, IndexList} from 'src/clockface'
-import DataLoaderSwitcher from 'src/dataLoaders/components/DataLoaderSwitcher'
 
 // Actions
 import {setBucketInfo} from 'src/dataLoaders/actions/steps'
@@ -41,7 +40,6 @@ type Props = OwnProps & StateProps & DispatchProps
 interface State {
   bucketID: string
   bucketOverlayState: OverlayState
-  dataLoadersOverlayState: OverlayState
 }
 
 class BucketList extends PureComponent<Props & WithRouterProps, State> {
@@ -59,21 +57,21 @@ class BucketList extends PureComponent<Props & WithRouterProps, State> {
     this.state = {
       bucketID,
       bucketOverlayState: OverlayState.Closed,
-      dataLoadersOverlayState: openDataLoaderOverlay
-        ? OverlayState.Open
-        : OverlayState.Closed,
+      // dataLoadersOverlayState: openDataLoaderOverlay
+      //   ? OverlayState.Open
+      //   : OverlayState.Closed,
     }
   }
 
   public render() {
     const {
-      dataLoaderType,
+      // dataLoaderType,
       buckets,
       emptyState,
       onDeleteBucket,
       onFilterChange,
     } = this.props
-    const {bucketID} = this.state
+    // const {bucketID} = this.state
 
     return (
       <>
@@ -104,13 +102,6 @@ class BucketList extends PureComponent<Props & WithRouterProps, State> {
             onUpdateBucket={this.handleUpdateBucket}
           />
         </Overlay>
-        <DataLoaderSwitcher
-          type={dataLoaderType}
-          visible={this.isDataLoadersWizardVisible}
-          onCompleteSetup={this.handleDismissDataLoaders}
-          buckets={buckets}
-          overrideBucketIDSelection={bucketID}
-        />
       </>
     )
   }
@@ -131,36 +122,55 @@ class BucketList extends PureComponent<Props & WithRouterProps, State> {
     bucket: PrettyBucket,
     dataLoaderType: DataLoaderType
   ) => {
-    this.props.onSetBucketInfo(
+    const {onSetBucketInfo, onSetDataLoadersType, router} = this.props
+    onSetBucketInfo(
       bucket.organization,
       bucket.organizationID,
       bucket.name,
       bucket.id
     )
 
-    this.props.onSetDataLoadersType(dataLoaderType)
+    onSetDataLoadersType(dataLoaderType)
+    router.push(this.overlayRoute(dataLoaderType))
+    // Make sure that Create Scraper Overlay goes back to
+    // either Scrapers or Buckets depending??
 
     this.setState({
       bucketID: bucket.id,
-      dataLoadersOverlayState: OverlayState.Open,
-    })
+    }) // /????
   }
 
-  private handleDismissDataLoaders = () => {
-    this.setState({
-      bucketID: '',
-      dataLoadersOverlayState: OverlayState.Closed,
-    })
-  }
+  // private handleDismissDataLoaders = () => {
+  //   this.setState({
+  //     bucketID: '',
+  //     dataLoadersOverlayState: OverlayState.Closed,
+  //   })
+  // }
 
-  private get isDataLoadersWizardVisible(): boolean {
-    const {bucketID, dataLoadersOverlayState} = this.state
-    return !!bucketID && dataLoadersOverlayState === OverlayState.Open
-  }
+  // private get isDataLoadersWizardVisible(): boolean {
+  //   const {bucketID, dataLoadersOverlayState} = this.state
+  //   return !!bucketID && dataLoadersOverlayState === OverlayState.Open
+  // }
 
   private get isBucketOverlayVisible(): boolean {
     const {bucketID, bucketOverlayState} = this.state
     return !!bucketID && bucketOverlayState === OverlayState.Open
+  }
+
+  private overlayRoute(dataLoaderType: DataLoaderType): string {
+    const {
+      params: {orgID},
+    } = this.props
+    switch (dataLoaderType) {
+      case DataLoaderType.Empty:
+        return '#'
+      case DataLoaderType.Scraping:
+        return `/orgs/${orgID}/buckets/scrapers/new`
+      case DataLoaderType.Streaming:
+        return `/orgs/${orgID}/buckets/telegrafs/new`
+      case DataLoaderType.LineProtocol:
+        return `/orgs/${orgID}/buckets/line-protocols/new`
+    }
   }
 
   private handleUpdateBucket = async (updatedBucket: PrettyBucket) => {

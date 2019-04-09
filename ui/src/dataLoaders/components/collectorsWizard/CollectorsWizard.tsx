@@ -86,11 +86,11 @@ class CollectorsWizard extends PureComponent<Props> {
   }
 
   public render() {
-    const {visible, buckets} = this.props
+    const {buckets} = this.props
 
     return (
       <WizardOverlay
-        visible={visible}
+        visible={true}
         title="Create a Telegraf Config"
         onDismiss={this.handleDismiss}
       >

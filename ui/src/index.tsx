@@ -48,14 +48,17 @@ import TelegrafsPage from 'src/telegrafs/containers/TelegrafsPage'
 import TemplateImportOverlay from 'src/templates/components/TemplateImportOverlay'
 import TemplateExportOverlay from 'src/templates/components/TemplateExportOverlay'
 import VariablesIndex from 'src/variables/containers/VariablesIndex'
-import OrgScrapersIndex from 'src/organizations/containers/OrgScrapersIndex'
+import ScrapersIndex from 'src/scrapers/containers/ScrapersIndex'
 import VariableImportOverlay from 'src/variables/components/VariableImportOverlay'
 import VariableExportOverlay from 'src/variables/components/VariableExportOverlay'
 import SetOrg from 'src/shared/containers/SetOrg'
 import RouteToOrg from 'src/shared/containers/RouteToOrg'
 import CreateOrgOverlay from 'src/organizations/components/CreateOrgOverlay'
+import CreateScraperOverlay from 'src/scrapers/components/CreateScraperOverlay'
 import TokensIndex from 'src/authorizations/containers/TokensIndex'
 import MembersIndex from 'src/members/containers/MembersIndex'
+import LineProtocolWizard from 'src/dataLoaders/components/lineProtocolWizard/LineProtocolWizard'
+import CollectorsWizard from 'src/dataLoaders/components/collectorsWizard/CollectorsWizard'
 
 // Actions
 import {disablePresentationMode} from 'src/shared/actions/app'
@@ -183,7 +186,20 @@ class Root extends PureComponent {
                           <Route path="settings">
                             <IndexRoute component={MembersIndex} />
                           </Route>
-                          <Route path="buckets" component={BucketsIndex} />
+                          <Route path="buckets" component={BucketsIndex}>
+                            <Route
+                              path="line-protocols/new"
+                              component={LineProtocolWizard}
+                            />
+                            <Route
+                              path="telegrafs/new"
+                              component={CollectorsWizard}
+                            />
+                            <Route
+                              path="scrapers/new"
+                              component={CreateScraperOverlay}
+                            />
+                          </Route>
                           <Route path="tokens" component={TokensIndex} />
                           <Route path="members" component={MembersIndex} />
                           <Route path="telegrafs" component={TelegrafsPage} />
@@ -211,7 +227,12 @@ class Root extends PureComponent {
                               component={CreateVariableOverlay}
                             />
                           </Route>
-                          <Route path="scrapers" component={OrgScrapersIndex} />
+                          <Route path="scrapers" component={ScrapersIndex}>
+                            <Route
+                              path="new"
+                              component={CreateScraperOverlay}
+                            />
+                          </Route>
                         </Route>
                       </Route>
                     </Route>
