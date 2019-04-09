@@ -52,9 +52,9 @@ func (s *SourceProxyQueryService) fluxQuery(ctx context.Context, w io.Writer, re
 	case lang.FluxCompiler:
 		request.Query = c.Query
 		request.Type = lang.FluxCompilerType
-	case lang.SpecCompiler:
+	case repl.Compiler:
 		request.Spec = c.Spec
-		request.Type = lang.SpecCompilerType
+		request.Type = repl.CompilerType
 	default:
 		return flux.Statistics{}, tracing.LogError(span, fmt.Errorf("compiler type not supported: %s", c.CompilerType()))
 	}
