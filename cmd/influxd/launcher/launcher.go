@@ -410,6 +410,10 @@ func (m *Launcher) run(ctx context.Context) (err error) {
 		return err
 	}
 
+	if !m.kvService.IsBucketMigrated(ctx) {
+		m.kvService.ConvertBucketToNew(ctx)
+	}
+
 	m.reg = prom.NewRegistry()
 	m.reg.MustRegister(
 		prometheus.NewGoCollector(),
